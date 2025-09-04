@@ -2,11 +2,11 @@
   "heer": {
     "wit": {
       "18": { "par": 72, "cr": 72.9, "sr": 129 },
-      "9_watertoren": { "par": 35, "cr": 35.8, "sr": 0 },
+      "9_watertoren": { "par": 35, "cr": 35.8, "sr": 119 },
       "9_grote_kreek": { "par": 37, "cr": 37.1, "sr": 139 }
     },
     "geel": {
-      "18": { "par": 72, "cr": 70.7, "sr": 128 },
+      "18": { "par": 72, "cr": 70.9, "sr": 128 },
       "9_watertoren": { "par": 35, "cr": 34.8, "sr": 124 },
       "9_grote_kreek": { "par": 37, "cr": 36.1, "sr": 132 }
     },
