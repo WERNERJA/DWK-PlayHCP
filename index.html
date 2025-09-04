@@ -47,9 +47,7 @@
       let ch = hi * (sr / 113.0) + (cr - par);
 
   // Halveer bij 9 holes
-      if (par < 60 {
-        ch = ch / 2;
-      }
+      if (par < 60) ch = ch / 2;
 
   // Toepassen van allowance (bijv. 95% voor strokeplay)
       const ph = ch * allowance;
