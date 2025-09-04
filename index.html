@@ -120,13 +120,19 @@
     }
 
     function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0, lus = '') {
-      const ch = hi * (sr / 113.0) + (cr - par);
-      let ph = ch * allowance;
-      if (lus.startsWith('9_')) {
-        ph = ph / 2;
-      }
+      // ✅ Halveer de Handicap Index eerst bij 9-holes
+      const adjustedHi = lus.startsWith('9_') ? hi / 2 : hi;
+    
+      // Bereken Course Handicap
+      const ch = adjustedHi * (sr / 113.0) + (cr - par);
+    
+      // Bereken Playing Handicap
+      const ph = ch * allowance;
+    
+      // ✅ Afronden volgens round half up
       return roundHalfUp(ph);
     }
+
 
     const TEE_OPTIONS = {
       heer: [
