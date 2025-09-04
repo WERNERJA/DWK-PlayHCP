@@ -1,156 +1,253 @@
-<script type="text/javascript">
-  const { useState, useEffect } = React;
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Playing Handicap Calculator</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/qrcodejs/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+    }
+    .error {
+      color: red;
+      margin-top: 1rem;
+    }
+    .step {
+      margin-bottom: 2rem;
+    }
+    .result {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-top: 1rem;
+    }
+    .qr {
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
 
-  function roundHalfUp(x) {
-    const factor = 1;
-    const abs = Math.abs(x);
-    const intPart = Math.floor(abs);
-    const frac = abs - intPart;
-    let rounded;
-    if (frac > 0.5) rounded = intPart + 1;
-    else if (frac < 0.5) rounded = intPart;
-    else rounded = intPart + 1;
-    return x < 0 ? -rounded : rounded;
-  }
+  <script type="text/javascript">
+    const { useState, useEffect } = React;
 
-  function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0, lus = '') {
-    const ch = hi * (sr / 113.0) + (cr - par);
-    let ph = ch * allowance;
-
-    // ✅ Aanpassing: halveer de playing handicap voor 9-holes lussen
-    if (lus.startsWith('9_')) {
-      ph = ph / 2;
+    function roundHalfUp(x) {
+      const abs = Math.abs(x);
+      const intPart = Math.floor(abs);
+      const frac = abs - intPart;
+      let rounded;
+      if (frac > 0.5) rounded = intPart + 1;
+      else if (frac < 0.5) rounded = intPart;
+      else rounded = intPart + 1;
+      return x < 0 ? -rounded : rounded;
     }
 
-    return roundHalfUp(ph);
-  }
-
-  const TEE_OPTIONS = {
-    heer: [
-      { key: 'wit', label: 'Wit', colorClass: 'bg-gray-800' },
-      { key: 'geel', label: 'Geel', colorClass: 'bg-yellow-500' },
-      { key: 'blauw', label: 'Blauw', colorClass: 'bg-blue-500' },
-      { key: 'rood', label: 'Rood', colorClass: 'bg-red-500' },
-      { key: 'oranje', label: 'Oranje', colorClass: 'bg-orange-500' },
-    ],
-    dame: [
-      { key: 'geel', label: 'Geel', colorClass: 'bg-yellow-500' },
-      { key: 'blauw', label: 'Blauw', colorClass: 'bg-blue-500' },
-      { key: 'rood', label: 'Rood', colorClass: 'bg-red-500' },
-      { key: 'oranje', label: 'Oranje', colorClass: 'bg-orange-500' },
-    ]
-  };
-
-  const LUS_OPTIONS = [
-    { key: '18', label: '18 holes' },
-    { key: '9_watertoren', label: '9 holes Watertoren' },
-    { key: '9_grote_kreek', label: '9 holes De Grote Kreek' },
-  ];
-
-  function App() {
-    const [step, setStep] = useState(1);
-    const [hi, setHi] = useState('');
-    const [gender, setGender] = useState('');
-    const [tee, setTee] = useState('');
-    const [lus, setLus] = useState('');
-    const [data, setData] = useState(null);
-    const [loadingData, setLoadingData] = useState(true);
-    const [error, setError] = useState('');
-    const [result, setResult] = useState(null);
-
-    useEffect(() => {
-      setLoadingData(true);
-      fetch('dwk-course-data.json')
-        .then(res => {
-          if (!res.ok) throw new Error('Kon dwk-course-data.json niet laden');
-          return res.json();
-        })
-        .then(json => {
-          setData(json);
-          setLoadingData(false);
-        })
-        .catch(err => {
-          setError(err.message);
-          setLoadingData(false);
-        });
-    }, []);
-
-    useEffect(() => {
-      const el = document.getElementById('qr');
-      if (!el) return;
-      el.innerHTML = '';
-      try {
-        new QRCode(el, { text: window.location.href, width: 96, height: 96 });
-      } catch (e) {}
-    }, [step]);
-
-    function goToStep2() {
-      setError('');
-      const val = parseFloat(hi);
-      if (isNaN(val) || val < -10 || val > 54) {
-        setError('Geef een geldige handicap index (bv. 14.3).');
-        return;
+    function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0, lus = '') {
+      const ch = hi * (sr / 113.0) + (cr - par);
+      let ph = ch * allowance;
+      if (lus.startsWith('9_')) {
+        ph = ph / 2;
       }
-      if (!gender) {
-        setError('Kies het geslacht (Heer of Dame).');
-        return;
-      }
-      if (loadingData) {
-        setError('Wacht tot dwk-course-data.json geladen is (even de pagina verversen als dit lang duurt).');
-        return;
-      }
-      if (!data) {
-        setError('dwk-course-data.json kon niet geladen worden. Controleer netwerk of bestand.');
-        return;
-      }
-      setStep(2);
+      return roundHalfUp(ph);
     }
 
-    function performCompute() {
-      setError('');
-      if (!tee || !lus) {
-        setError('Kies een tee-box en een lus.');
-        return;
-      }
-      if (lus.includes('kleine')) {
-        setError('De Kleine Kreek wordt niet ondersteund.');
-        return;
-      }
-      const g = data?.[gender];
-      const t = g?.[tee];
-      const seg = t?.[lus];
-      if (!seg) {
-        setError(`Ontbrekende course-parameters voor deze combinatie: ${gender}/${tee}/${lus}. Controleer dwk-course-data.json.`);
-        return;
-      }
-      const par = Number(seg.par);
-      const cr = Number(seg.cr);
-      const sr = Number(seg.sr);
-      const hiVal = parseFloat(hi);
-      if ([par, cr, sr].some(v => Number.isNaN(v))) {
-        setError('Onjuiste parameterwaarden in dwk-course-data.json voor deze combinatie.');
-        return;
+    const TEE_OPTIONS = {
+      heer: [
+        { key: 'wit', label: 'Wit' },
+        { key: 'geel', label: 'Geel' },
+        { key: 'blauw', label: 'Blauw' },
+        { key: 'rood', label: 'Rood' },
+        { key: 'oranje', label: 'Oranje' },
+      ],
+      dame: [
+        { key: 'geel', label: 'Geel' },
+        { key: 'blauw', label: 'Blauw' },
+        { key: 'rood', label: 'Rood' },
+        { key: 'oranje', label: 'Oranje' },
+      ]
+    };
+
+    const LUS_OPTIONS = [
+      { key: '18', label: '18 holes' },
+      { key: '9_watertoren', label: '9 holes Watertoren' },
+      { key: '9_grote_kreek', label: '9 holes De Grote Kreek' },
+    ];
+
+    function App() {
+      const [step, setStep] = useState(1);
+      const [hi, setHi] = useState('');
+      const [gender, setGender] = useState('');
+      const [tee, setTee] = useState('');
+      const [lus, setLus] = useState('');
+      const [data, setData] = useState(null);
+      const [loadingData, setLoadingData] = useState(true);
+      const [error, setError] = useState('');
+      const [result, setResult] = useState(null);
+
+      useEffect(() => {
+        fetch('dwk-course-data.json')
+          .then(res => {
+            if (!res.ok) throw new Error('Kon dwk-course-data.json niet laden');
+            return res.json();
+          })
+          .then(json => {
+            setData(json);
+            setLoadingData(false);
+          })
+          .catch(err => {
+            setError(err.message);
+            setLoadingData(false);
+          });
+      }, []);
+
+      useEffect(() => {
+        const el = document.getElementById('qr');
+        if (!el) return;
+        el.innerHTML = '';
+        try {
+          new QRCode(el, { text: window.location.href, width: 96, height: 96 });
+        } catch (e) {}
+      }, [step]);
+
+      function goToStep2() {
+        setError('');
+        const val = parseFloat(hi);
+        if (isNaN(val) || val < -10 || val > 54) {
+          setError('Geef een geldige handicap index (bv. 14.3).');
+          return;
+        }
+        if (!gender) {
+          setError('Kies het geslacht (Heer of Dame).');
+          return;
+        }
+        if (loadingData) {
+          setError('Wacht tot dwk-course-data.json geladen is.');
+          return;
+        }
+        if (!data) {
+          setError('dwk-course-data.json kon niet geladen worden.');
+          return;
+        }
+        setStep(2);
       }
 
-      // ✅ Lus meegeven aan computePlayingHandicap
-      const ph = computePlayingHandicap(hiVal, par, cr, sr, 1.0, lus);
-      setResult({ ph, par, cr, sr });
-      setStep(3);
+      function performCompute() {
+        setError('');
+        if (!tee || !lus) {
+          setError('Kies een tee-box en een lus.');
+          return;
+        }
+        if (lus.includes('kleine')) {
+          setError('De Kleine Kreek wordt niet ondersteund.');
+          return;
+        }
+        const g = data?.[gender];
+        const t = g?.[tee];
+        const seg = t?.[lus];
+        if (!seg) {
+          setError(`Ontbrekende course-parameters voor ${gender}/${tee}/${lus}.`);
+          return;
+        }
+        const par = Number(seg.par);
+        const cr = Number(seg.cr);
+        const sr = Number(seg.sr);
+        const hiVal = parseFloat(hi);
+        if ([par, cr, sr].some(v => Number.isNaN(v))) {
+          setError('Onjuiste parameterwaarden in dwk-course-data.json.');
+          return;
+        }
+
+        const ph = computePlayingHandicap(hiVal, par, cr, sr, 1.0, lus);
+        setResult({ ph, par, cr, sr });
+        setStep(3);
+      }
+
+      function resetAll() {
+        setStep(1);
+        setHi('');
+        setGender('');
+        setTee('');
+        setLus('');
+        setError('');
+        setResult(null);
+      }
+
+      return (
+        <div>
+          <h1>Playing Handicap Calculator</h1>
+
+          {step === 1 && (
+            <div className="step">
+              <label>
+                Handicap Index:
+                <input type="text" value={hi} onChange={e => setHi(e.target.value)} />
+              </label>
+              <br />
+              <label>
+                Geslacht:
+                <select value={gender} onChange={e => setGender(e.target.value)}>
+                  <option value="">-- Kies --</option>
+                  <option value="heer">Heer</option>
+                  <option value="dame">Dame</option>
+                </select>
+              </label>
+              <br />
+              <button onClick={goToStep2}>Volgende</button>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="step">
+              <label>
+                Tee-box:
+                <select value={tee} onChange={e => setTee(e.target.value)}>
+                  <option value="">-- Kies --</option>
+                  {TEE_OPTIONS[gender]?.map(opt => (
+                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+              <br />
+              <label>
+                Lus:
+                <select value={lus} onChange={e => setLus(e.target.value)}>
+                  <option value="">-- Kies --</option>
+                  {LUS_OPTIONS.map(opt => (
+                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                  ))}
+                </select>
+              </label>
+              <br />
+              <button onClick={performCompute}>Bereken</button>
+            </div>
+          )}
+
+          {step === 3 && result && (
+            <div className="step">
+              <div className="result">
+                Playing Handicap: {result.ph}
+              </div>
+              <div>
+                Par: {result.par}, Course Rating: {result.cr}, Slope Rating: {result.sr}
+              </div>
+              <div id="qr" className="qr"></div>
+              <br />
+              <button onClick={resetAll}>Opnieuw</button>
+            </div>
+          )}
+
+          {error && <div className="error">{error}</div>}
+        </div>
+      );
     }
 
-    function resetAll() {
-      setStep(1);
-      setHi('');
-      setGender('');
-      setTee('');
-      setLus('');
-      setError('');
-      setResult(null);
-    }
-
-    // ... rest van de render logica blijft ongewijzigd ...
-  }
-
-  const root = ReactDOM.createRoot(document.getElementById('app'));
-  root.render(React.createElement(App));
-</script>
+    const root = ReactDOM.createRoot(document.getElementById('app'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
