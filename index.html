@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DWK Playing Handicap Calculator</title>
 
-  <!-- ✅ React & ReactDOM eerst laden -->
+  <!-- ✅ React & ReactDOM laden -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/qrcodejs/qrcode.min.js"></script>
@@ -55,7 +55,6 @@
 <body>
   <div id="app"></div>
 
-  <!-- ✅ Je eigen script komt pas NA React -->
   <script type="text/javascript">
     const { useState, useEffect } = React;
 
@@ -181,65 +180,82 @@
         setResult(null);
       }
 
-      return (
-        <div>
-          <h1>DWK Playing Handicap Calculator</h1>
+      const elements = [];
 
-          {step === 1 && (
-            <div>
-              <label>
-                Handicap Index:
-                <input type="text" value={hi} onChange={e => setHi(e.target.value)} />
-              </label>
-              <label>
-                Geslacht:
-                <select value={gender} onChange={e => setGender(e.target.value)}>
-                  <option value="">-- Kies --</option>
-                  <option value="heer">Heer</option>
-                  <option value="dame">Dame</option>
-                </select>
-              </label>
-              <button onClick={goToStep2}>Volgende</button>
-            </div>
-          )}
+      elements.push(React.createElement("h1", null, "DWK Playing Handicap Calculator"));
 
-          {step === 2 && (
-            <div>
-              <label>
-                Tee-box:
-                <select value={tee} onChange={e => setTee(e.target.value)}>
-                  <option value="">-- Kies --</option>
-                  {TEE_OPTIONS[gender]?.map(opt => (
-                    <option key={opt.key} value={opt.key}>{opt.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Lus:
-                <select value={lus} onChange={e => setLus(e.target.value)}>
-                  <option value="">-- Kies --</option>
-                  {LUS_OPTIONS.map(opt => (
-                    <option key={opt.key} value={opt.key}>{opt.label}</option>
-                  ))}
-                </select>
-              </label>
-              <button onClick={performCompute}>Bereken</button>
-            </div>
-          )}
+      if (step === 1) {
+        elements.push(
+          React.createElement("label", null,
+            "Handicap Index:",
+            React.createElement("input", {
+              type: "text",
+              value: hi,
+              onChange: e => setHi(e.target.value)
+            })
+          ),
+          React.createElement("label", null,
+            "Geslacht:",
+            React.createElement("select", {
+              value: gender,
+              onChange: e => setGender(e.target.value)
+            },
+              React.createElement("option", { value: "" }, "-- Kies --"),
+              React.createElement("option", { value: "heer" }, "Heer"),
+              React.createElement("option", { value: "dame" }, "Dame")
+            )
+          ),
+          React.createElement("button", { onClick: goToStep2 }, "Volgende")
+        );
+      }
 
-          {step === 3 && result && (
-            <div>
-              <div className="result">Playing Handicap: {result.ph}</div>
-              <div>Par: {result.par}, CR: {result.cr}, SR: {result.sr}</div>
-              <div id="qr" className="qr"></div>
-              <button onClick={resetAll}>Opnieuw</button>
-            </div>
-          )}
+      if (step === 2) {
+        const teeOptions = TEE_OPTIONS[gender] || [];
+        elements.push(
+          React.createElement("label", null,
+            "Tee-box:",
+            React.createElement("select", {
+              value: tee,
+              onChange: e => setTee(e.target.value)
+            },
+              React.createElement("option", { value: "" }, "-- Kies --"),
+              ...teeOptions.map(opt =>
+                React.createElement("option", { key: opt.key, value: opt.key }, opt.label)
+              )
+            )
+          ),
+          React.createElement("label", null,
+            "Lus:",
+            React.createElement("select", {
+              value: lus,
+              onChange: e => setLus(e.target.value)
+            },
+              React.createElement("option", { value: "" }, "-- Kies --"),
+              ...LUS_OPTIONS.map(opt =>
+                React.createElement("option", { key: opt.key, value: opt.key }, opt.label)
+              )
+            )
+          ),
+          React.createElement("button", { onClick: performCompute }, "Bereken")
+        );
+      }
 
-          {error && <div className="error">{error}</div>}
-        </div>
-      );
+      if (step === 3 && result) {
+        elements.push(
+          React.createElement("div", { className: "result" }, `Playing Handicap: ${result.ph}`),
+          React.createElement("div", null, `Par: ${result.par}, CR: ${result.cr}, SR: ${result.sr}`),
+          React.createElement("div", { id: "qr", className: "qr" }),
+          React.createElement("button", { onClick: resetAll }, "Opnieuw")
+        );
+      }
+
+      if (error) {
+        elements.push(React.createElement("div", { className: "error" }, error));
+      }
+
+      return React.createElement("div", null, ...elements);
     }
+
 
     const root = ReactDOM.createRoot(document.getElementById('app'));
     root.render(React.createElement(App));
