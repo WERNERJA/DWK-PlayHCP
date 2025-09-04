@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DWK Playing Handicap Calculator</title>
+  <title>De Woeste Kop - Playing Handicap</title>
 
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -11,15 +11,20 @@
 
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #eef2f7;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #f0f4f8, #dfe9f3);
       padding: 2rem;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
+      text-align: center;
     }
     h1 {
       color: #2c3e50;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .logo {
+      width: 120px;
+      margin-bottom: 1rem;
     }
     .section {
       margin-bottom: 2rem;
@@ -30,28 +35,31 @@
       display: block;
     }
     input {
-      width: 100%;
-      padding: 0.5rem;
+      width: 80%;
+      padding: 0.6rem;
       font-size: 1rem;
       border: 1px solid #ccc;
-      border-radius: 4px;
+      border-radius: 6px;
+      margin-top: 0.5rem;
     }
     .button-group {
       display: flex;
       flex-wrap: wrap;
+      justify-content: center;
       gap: 0.5rem;
-      margin-top: 0.5rem;
+      margin-top: 1rem;
     }
     .btn {
-      padding: 0.6rem 1rem;
+      padding: 0.6rem 1.2rem;
       font-size: 1rem;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       color: white;
+      min-width: 100px;
     }
     .btn.selected {
-      outline: 3px solid #2c3e50;
+      box-shadow: 0 0 0 3px #2c3e50;
     }
     .btn-wit { background-color: #cccccc; color: black; }
     .btn-geel { background-color: #f1c40f; }
@@ -66,19 +74,34 @@
       color: red;
       margin-top: 1rem;
     }
-    .result {
-      font-size: 1.2rem;
+    .result-box {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-top: 2rem;
+    }
+    .result-title {
+      font-size: 1.5rem;
       font-weight: bold;
-      margin-top: 1rem;
       color: #2c3e50;
+      margin-bottom: 1rem;
+    }
+    .result-details {
+      font-size: 1rem;
+      color: #34495e;
+      line-height: 1.6;
+      white-space: pre-line;
     }
     .qr {
-      margin-top: 2rem;
-      text-align: center;
+      margin-top: 1rem;
     }
   </style>
 </head>
 <body>
+  <img src="logoDWK.png" alt="Logo De Woeste Kop" class="logo" />
+  <h1>De Woeste Kop</h1>
+  <div id="qr" class="qr"></div>
   <div id="app"></div>
 
   <script type="text/javascript">
@@ -147,7 +170,7 @@
         try {
           new QRCode(el, { text: window.location.href, width: 96, height: 96 });
         } catch (e) {}
-      }, [step]);
+      }, []);
 
       function goToStep2() {
         setError('');
@@ -189,7 +212,7 @@
           return;
         }
         const ph = computePlayingHandicap(hiVal, par, cr, sr, 1.0, lus);
-        setResult({ ph, par, cr, sr });
+        setResult({ ph, par, cr, sr, hi: hiVal, gender, tee, lus });
         setStep(3);
       }
 
@@ -205,8 +228,6 @@
 
       const elements = [];
 
-      elements.push(React.createElement("h1", null, "DWK Playing Handicap Calculator"));
-
       if (step === 1) {
         elements.push(
           React.createElement("div", { className: "section" },
@@ -218,22 +239,21 @@
             })
           ),
           React.createElement("div", { className: "section" },
-            React.createElement("span", { className: "label" }, "Ben je heer of dame?"),
             React.createElement("div", { className: "button-group" },
               React.createElement("button", {
                 className: `btn btn-heer${gender === 'heer' ? ' selected' : ''}`,
                 onClick: () => setGender('heer')
               }, "Heer"),
-          React.createElement("button", {
+              React.createElement("button", {
                 className: `btn btn-dame${gender === 'dame' ? ' selected' : ''}`,
                 onClick: () => setGender('dame')
-              }, "Dame"),
-              React.createElement("button", {
-                className: "btn btn-action",
-                onClick: goToStep2
-              }, "Volgende")
+              }, "Dame")
             )
-          )
+          ),
+          React.createElement("button", {
+            className: "btn btn-action",
+            onClick: goToStep2
+          }, "Volgende")
         );
       }
 
@@ -273,13 +293,20 @@
 
       if (step === 3 && result) {
         elements.push(
-          React.createElement("div", { className: "result" }, `Playing Handicap: ${result.ph}`),
-          React.createElement("div", null, `Par: ${result.par}, CR: ${result.cr}, SR: ${result.sr}`),
-          React.createElement("div", { id: "qr", className: "qr" }),
-          React.createElement("button", {
-            className: "btn btn-action",
-            onClick: resetAll
-          }, "Opnieuw")
+          React.createElement("div", { className: "result-box" },
+            React.createElement("div", { className: "result-title" }, `🎯 Playing Handicap: ${result.ph}`),
+            React.createElement("div", { className: "result-details" },
+              `Handicap Index: ${result.hi}\n` +
+              `Geslacht: ${result.gender}\n` +
+              `Tee-box: ${result.tee}\n` +
+              `Lus: ${result.lus}\n` +
+              `Par: ${result.par}, CR: ${result.cr}, SR: ${result.sr}`
+            ),
+            React.createElement("button", {
+              className: "btn btn-action",
+              onClick: resetAll
+            }, "Opnieuw")
+          )
         );
       }
 
@@ -295,3 +322,8 @@
   </script>
 </body>
 </html>
+
+
+
+
+      
