@@ -45,6 +45,13 @@
 
     function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0) {
       const ch = hi * (sr / 113.0) + (cr - par);
+      // Halveer bij 9 holes (optioneel, afhankelijk van je systeem)
+      if (lus.startsWith("9_")) {
+        ch = ch / 2;
+          }
+
+      // ✅ Altijd afronden
+      // playingHcp = Math.round(playingHcp);
       const ph = ch * allowance;
       return roundHalfUp(ph);
     }
