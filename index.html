@@ -5,38 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DWK Playing Handicap Calculator</title>
 
-  <!-- ✅ React & ReactDOM laden -->
+  <!-- React & ReactDOM -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/qrcodejs/qrcode.min.js"></script>
 
   <style>
     body {
-      font-family: sans-serif;
-      margin: 2rem;
-      background-color: #f0f4f8;
+      font-family: Arial, sans-serif;
+      background-color: #eef2f7;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
     }
     h1 {
-      color: #333;
+      color: #2c3e50;
+      margin-bottom: 1.5rem;
     }
     label {
       display: block;
       margin-top: 1rem;
+      font-weight: bold;
     }
     input, select {
-      margin-top: 0.5rem;
-      padding: 0.4rem;
+      width: 100%;
+      padding: 0.5rem;
+      margin-top: 0.3rem;
       font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
     }
     button {
       margin-top: 1.5rem;
       padding: 0.6rem 1.2rem;
       font-size: 1rem;
-      background-color: #0077cc;
+      background-color: #3498db;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
     }
     .error {
       color: red;
@@ -46,9 +56,11 @@
       font-size: 1.2rem;
       font-weight: bold;
       margin-top: 1rem;
+      color: #2c3e50;
     }
     .qr {
       margin-top: 2rem;
+      text-align: center;
     }
   </style>
 </head>
@@ -256,8 +268,7 @@
       return React.createElement("div", null, ...elements);
     }
 
-
-    const root = ReactDOM.createRoot(document.getElementById('app'));
+    const root = ReactDOM.createRoot(document.getElementById("app"));
     root.render(React.createElement(App));
   </script>
 </body>
