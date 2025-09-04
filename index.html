@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>De Woeste Kop – Playing Handicap</title>
+
+  <!-- Tailwind via CDN (voor eenvoudige single-file gebruik) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React 18 (UMD) + ReactDOM (UMD) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+  <!-- Kleine QRCode library om een QR voor de huidige URL te tonen -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* Extra styling via Tailwind-utility-classes gecombineerd met a few helper classes */
+    .btn { padding: 0.75rem 1rem; border-radius: 1rem; font-weight: 600; color: white; box-shadow: 0 6px 18px rgba(15,23,42,0.08); transition: transform .08s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0.5rem; }
+    .card { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 6px 20px rgba(2,6,23,0.06); }
+    .label { display: block; margin-bottom: 0.25rem; color: #475569; font-size: 0.9rem; }
+    .input { width: 100%; padding: 0.75rem; border-radius: 0.75rem; border: 1px solid #E6E7EA; }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-emerald-50 to-sky-50 text-slate-900">
+  <div id="app" class="max-w-xl mx-auto p-4 sm:p-6 md:p-8"></div>
+
+  <script type="text/javascript">
+    // ------------------------------------------------------------
+    // De Woeste Kop - Single-file React webapp
+    // - Leest 'dwk-course-data.json' uit dezelfde map als deze index.html
+    // - Stap 1: Handicap index + geslacht
+    // - Stap 2: Kies tee-box (knoppen met kleur) + lus (18 / 9 Watertoren / 9 De Grote Kreek)
+    // - Stap 3: Berekent playing handicap via WHS-formule:
+    //      Course Handicap = HI * (SR / 113) + (CR - PAR)
+    //      Playing Handicap = Course Handicap * allowance (hier 100%)
+    // - Afronding: .5 naar boven (ROUND_HALF_UP)
+    // - De Kleine Kreek wordt niet ondersteund (zoals gevraagd)
+    // ------------------------------------------------------------
+
+    const { useState, useEffect } = React;
+
+    // Rond .5 altijd omhoog (WHS-compatibel)
+    function roundHalfUp(x) {
+      // x is a Number (can be negative)
+      const factor = 1;
+      const abs = Math.abs(x);
+      const intPart = Math.floor(abs);
+      const frac = abs - intPart;
+      let rounded;
+      if (frac > 0.5) rounded = intPart + 1;
+      else if (frac < 0.5) rounded = intPart;
+      else rounded = intPart + 1; // exactly .5 -> up
+      return x < 0 ? -rounded : rounded;
+    }
+
+    // Bereken playing handicap (returns integer)
+    function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0) {
+      // hi: handicap index (Number)
+      // par, cr, sr: numeric parameters from JSON
+      const ch = hi * (sr / 113.0) + (cr - par); // course handicap (float)
+      const ph = ch * allowance;
+      return roundHalfUp(ph);
+    }
+
+    // UI constants: welke tees voor welk geslacht + kleur styling classe
+    const TEE_OPTIONS = {
+      heer: [
+        { key: 'wit', label: 'Wit', colorClass: 'bg-gray-800' },
+        { key: 'geel', label: 'Geel', colorClass: 'bg-yellow-500' },
+        { key: 'blauw', label: 'Blauw', colorClass: 'bg-blue-500' },
+        { key: 'rood', label: 'Rood', colorClass: 'bg-red-500' },
+        { key: 'oranje', label: 'Oranje', colorClass: 'bg-orange-500' },
+      ],
+      dame: [
+        { key: 'geel', label: 'Geel', colorClass: 'bg-yellow-500' },
+        { key: 'blauw', label: 'Blauw', colorClass: 'bg-blue-500' },
+        { key: 'rood', label: 'Rood', colorClass: 'bg-red-500' },
+        { key: 'oranje', label: 'Oranje', colorClass: 'bg-orange-500' },
+      ]
+    };
+
+    const LUS_OPTIONS = [
+      { key: '18', label: '18 holes' },
+      { key: '9_watertoren', label: '9 holes Watertoren' },
+      { key: '9_grote_kreek', label: '9 holes De Grote Kreek' },
+    ];
+
+    function App() {
+      // State variables
+      const [step, setStep] = useState(1); // 1=input,2=select tee,3=result
+      const [hi, setHi] = useState(''); // string input for number
+      const [gender, setGender] = useState(''); // 'heer' or 'dame'
+      const [tee, setTee] = useState('');
+      const [lus, setLus] = useState('');
+      const [data, setData] = useState(null); // JSON data
+      const [error, setError] = useState('');
+      const [result, setResult] = useState(null); // {ph, par, cr, sr}
+
+      // Load JSON file on mount
+      useEffect(() => {
+        fetch('dwk-course-data.json')
+          .then(res => {
+            if (!res.ok) throw new Error('Kon dwk-course-data.json niet laden');
+            return res.json();
+          })
+          .then(json => setData(json))
+          .catch(err => setError(err.message));
+      }, []);
+
+      // Create/refresh QR code (points to current URL)
+      useEffect(() => {
+        const el = document.getElementById('qr');
+        if (!el) return;
+        el.innerHTML = '';
+        try {
+          new QRCode(el, { text: window.location.href, width: 96, height: 96 });
+        } catch (e) {
+          // silent
+        }
+      }, [step]);
+
+      // Handlers
+      function goToStep2() {
+        setError('');
+        const val = parseFloat(hi);
+        if (isNaN(val) || val < -10 || val > 54) {
+          setError('Geef een geldige handicap index (bv. 14.3).');
+          return;
+        }
+        if (!gender) {
+          setError('Kies het geslacht (Heer of Dame).');
+          return;
+        }
+        setStep(2);
+      }
+
+      function performCompute() {
+        setError('');
+        if (!tee || !lus) {
+          setError('Kies een tee-box en een lus.');
+          return;
+        }
+        // Kleine Kreek uitsluiten (zoals gevraagd)
+        if (lus.includes('kleine')) {
+          setError('De Kleine Kreek wordt niet ondersteund.');
+          return;
+        }
+        // Lookup in JSON (data[gender][tee][lus])
+        const g = data?.[gender];
+        const t = g?.[tee];
+        const seg = t?.[lus];
+        if (!seg) {
+          setError('Ontbrekende course-parameters voor deze combinatie. Vul dwk-course-data.json aan.');
+          return;
+        }
+        const par = Number(seg.par);
+        const cr = Number(seg.cr);
+        const sr = Number(seg.sr);
+        const hiVal = parseFloat(hi);
+        if ([par, cr, sr].some(v => Number.isNaN(v))) {
+          setError('Onjuiste parameterwaarden in dwk-course-data.json voor deze combinatie.');
+          return;
+        }
+        const ph = computePlayingHandicap(hiVal, par, cr, sr, 1.0);
+        setResult({ ph, par, cr, sr });
+        setStep(3);
+      }
+
+      function resetAll() {
+        setStep(1);
+        setHi('');
+        setGender('');
+        setTee('');
+        setLus('');
+        setError('');
+        setResult(null);
+      }
+
+      return (
+        React.createElement('div', { className: 'space-y-6' },
+          // Header met logo + titel + QR
+          React.createElement('header', { className: 'flex items-center gap-4' },
+            React.createElement('img', {
+              src: 'https://www.dewoestekop.nl/wp-content/uploads/2021/01/Logo-De-Woeste-Kop-3.png',
+              alt: 'De Woeste Kop logo',
+              className: 'w-16 h-16 object-contain rounded'
+            }),
+            React.createElement('div', null,
+              React.createElement('h1', { className: 'text-2xl font-bold' }, 'Playing Handicap'),
+              React.createElement('p', { className: 'text-sm text-slate-600' }, 'Golfclub De Woeste Kop')
+            ),
+            React.createElement('div', { id: 'qr', className: 'ml-auto' })
+          ),
+
+          // Foutmelding (indien aanwezig)
+          error && React.createElement('div', { className: 'card border border-red-200 bg-red-50 text-red-700' }, error),
+
+          // STEP 1: HI + Gender
+          step === 1 && React.createElement('section', { className: 'card space-y-5' },
+            React.createElement('div', null,
+              React.createElement('label', { className: 'label' }, 'Handicap index (HI)'),
+              React.createElement('input', {
+                className: 'input',
+                type: 'number',
+                step: '0.1',
+                min: '-10',
+                max: '54',
+                placeholder: 'bv. 14.3',
+                value: hi,
+                onChange: e => setHi(e.target.value)
+              })
+            ),
+            React.createElement('div', null,
+              React.createElement('label', { className: 'label' }, 'Geslacht'),
+              React.createElement('div', { className: 'btn-grid' },
+                React.createElement('button', {
+                  className: 'btn bg-emerald-600 ' + (gender === 'heer' ? 'ring-4 ring-emerald-300' : ''),
+                  onClick: () => setGender('heer')
+                }, 'Heer'),
+                React.createElement('button', {
+                  className: 'btn bg-emerald-600 ' + (gender === 'dame' ? 'ring-4 ring-emerald-300' : ''),
+                  onClick: () => setGender('dame')
+                }, 'Dame')
+              )
+            ),
+            React.createElement('div', { className: 'flex justify-end' },
+              React.createElement('button', { className: 'btn bg-sky-600', onClick: goToStep2 }, 'Volgende')
+            )
+          ),
+
+          // STEP 2: Tee + Lus
+          step === 2 && React.createElement('section', { className: 'card space-y-5' },
+            React.createElement('div', null,
+              React.createElement('label', { className: 'label' }, 'Kies tee-box'),
+              React.createElement('div', { className: 'btn-grid' },
+                (TEE_OPTIONS[gender] || []).map(opt =>
+                  React.createElement('button', {
+                    key: opt.key,
+                    className: 'btn ' + opt.colorClass + ' ' + (tee === opt.key ? 'ring-4 ring-emerald-300' : ''),
+                    onClick: () => setTee(opt.key)
+                  }, opt.label)
+                )
+              )
+            ),
+            React.createElement('div', null,
+              React.createElement('label', { className: 'label' }, 'Kies lus'),
+              React.createElement('div', { className: 'btn-grid' },
+                LUS_OPTIONS.map(opt =>
+                  React.createElement('button', {
+                    key: opt.key,
+                    className: 'btn bg-emerald-600 ' + (lus === opt.key ? 'ring-4 ring-emerald-300' : ''),
+                    onClick: () => setLus(opt.key)
+                  }, opt.label)
+                )
+              )
+            ),
+            React.createElement('div', { className: 'flex justify-between' },
+              React.createElement('button', { className: 'btn bg-gray-600', onClick: () => setStep(1) }, 'Terug'),
+              React.createElement('button', { className: 'btn bg-sky-600', onClick: performCompute }, 'Toon resultaat')
+            )
+          ),
+
+          // STEP 3: Resultaat
+          step === 3 && React.createElement('section', { className: 'card space-y-4' },
+            React.createElement('h2', { className: 'text-xl font-semibold' }, 'Resultaat'),
+            React.createElement('p', null,
+              'Playing handicap: ',
+              React.createElement('span', { className: 'font-bold text-emerald-700 text-lg' }, result?.ph ?? '—')
+            ),
+            result && React.createElement('div', { className: 'text-sm text-slate-600' },
+              `Gebaseerd op PAR ${result.par}, CR ${result.cr}, SR ${result.sr}`
+            ),
+            React.createElement('div', { className: 'flex justify-between' },
+              React.createElement('button', { className: 'btn bg-gray-600', onClick: () => setStep(2) }, 'Wijzig keuzes'),
+              React.createElement('button', { className: 'btn bg-emerald-600', onClick: resetAll }, 'Nieuwe berekening')
+            )
+          ),
+
+          // Footer / credits
+          React.createElement('footer', { className: 'text-xs text-slate-500 mt-6' },
+            'Gemaakt voor De Woeste Kop — controleer dwk-course-data.json voor juiste CR/SR waarden.'
+          )
+        )
+      );
+    }
+
+    // Render app
+    const root = ReactDOM.createRoot(document.getElementById('app'));
+    root.render(React.createElement(App));
+  </script>
+</body>
+</html>
