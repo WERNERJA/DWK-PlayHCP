@@ -64,6 +64,10 @@
     }
     .btn.selected {
       box-shadow: 0 0 0 3px #2c3e50;
+      border: 2px solid #2c3e50;
+      background-color: #ffffff !important;
+      color: #2c3e50 !important;
+      font-weight: bold;
     }
     .btn-wit { background-color: #cccccc; color: black; }
     .btn-geel { background-color: #f1c40f; }
@@ -120,19 +124,11 @@
     }
 
     function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0, lus = '') {
-      // ✅ Halveer de Handicap Index eerst bij 9-holes
       const adjustedHi = lus.startsWith('9_') ? hi / 2 : hi;
-    
-      // Bereken Course Handicap
       const ch = adjustedHi * (sr / 113.0) + (cr - par);
-    
-      // Bereken Playing Handicap
       const ph = ch * allowance;
-    
-      // ✅ Afronden volgens round half up
       return roundHalfUp(ph);
     }
-
 
     const TEE_OPTIONS = {
       heer: [
@@ -334,3 +330,7 @@
   </script>
 </body>
 </html>
+
+
+
+      
