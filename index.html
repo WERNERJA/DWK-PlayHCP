@@ -34,13 +34,13 @@
       margin-bottom: 0.5rem;
       display: block;
     }
-    input {
-      width: 80%;
-      padding: 0.6rem;
+    input[type="text"] {
+      width: 100px;
+      padding: 0.4rem;
       font-size: 1rem;
       border: 1px solid #ccc;
       border-radius: 6px;
-      margin-top: 0.5rem;
+      text-align: center;
     }
     .button-group {
       display: flex;
@@ -57,6 +57,10 @@
       cursor: pointer;
       color: white;
       min-width: 100px;
+      transition: transform 0.2s ease;
+    }
+    .btn:hover {
+      transform: scale(1.05);
     }
     .btn.selected {
       box-shadow: 0 0 0 3px #2c3e50;
@@ -94,15 +98,15 @@
       white-space: pre-line;
     }
     .qr {
-      margin-top: 1rem;
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
   <img src="logoDWK.png" alt="Logo De Woeste Kop" class="logo" />
   <h1>De Woeste Kop</h1>
-  <div id="qr" class="qr"></div>
   <div id="app"></div>
+  <div id="qr" class="qr"></div>
 
   <script type="text/javascript">
     const { useState, useEffect } = React;
@@ -175,7 +179,8 @@
       function goToStep2() {
         setError('');
         const val = parseFloat(hi);
-        if (isNaN(val) || val < -10 || val > 54) {
+        const validFormat = /^\d{1,2}\.\d$/.test(hi);
+        if (!validFormat || isNaN(val) || val < -10 || val > 54) {
           setError('Geef een geldige handicap index (bv. 14.3)');
           return;
         }
@@ -235,7 +240,8 @@
             React.createElement("input", {
               type: "text",
               value: hi,
-              onChange: e => setHi(e.target.value)
+              onChange: e => setHi(e.target.value),
+              placeholder: "bv. 14.3"
             })
           ),
           React.createElement("div", { className: "section" },
@@ -322,8 +328,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-      
