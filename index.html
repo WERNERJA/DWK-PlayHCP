@@ -43,11 +43,11 @@
       return x < 0 ? -rounded : rounded;
     }
 
-    function computePlayingHandicap(hi, par, cr, sr, lus, allowance = 1.0) {
+    function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0) {
       let ch = hi * (sr / 113.0) + (cr - par);
 
   // Halveer bij 9 holes
-      if (lus.startsWith("9_")) {
+      if (par < 60 {
         ch = ch / 2;
       }
 
