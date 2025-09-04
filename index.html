@@ -1,4 +1,4 @@
-<!doctype html>
+  <!doctype html>
 <html lang="nl">
 <head>
   <meta charset="utf-8" />
@@ -43,18 +43,21 @@
       return x < 0 ? -rounded : rounded;
     }
 
-    function computePlayingHandicap(hi, par, cr, sr, allowance = 1.0) {
-      const ch = hi * (sr / 113.0) + (cr - par);
-      // Halveer bij 9 holes (optioneel, afhankelijk van je systeem)
+    function computePlayingHandicap(hi, par, cr, sr, lus, allowance = 1.0) {
+      let ch = hi * (sr / 113.0) + (cr - par);
+
+  // Halveer bij 9 holes
       if (lus.startsWith("9_")) {
         ch = ch / 2;
-          }
+      }
 
-      // ✅ Altijd afronden
-      // playingHcp = Math.round(playingHcp);
+  // Toepassen van allowance (bijv. 95% voor strokeplay)
       const ph = ch * allowance;
+
+  // Altijd afronden naar dichtstbijzijnde geheel getal
       return roundHalfUp(ph);
-    }
+}
+
 
     const TEE_OPTIONS = {
       heer: [
